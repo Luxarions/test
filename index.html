@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Character Info - Game UI</title>
+    <!-- Google Fonts untuk tampilan yang mirip -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <!-- FontAwesome untuk ikon -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-modal: linear-gradient(180deg, #2b1b62 0%, #150b33 100%);
+            --border-glow: #6a5acd;
+            --input-bg: #060312;
+            --text-main: #ffffff;
+            --text-muted: #a8a3c0;
+            --accent-blue: #4a3aff;
+            --stage-bg: radial-gradient(circle at 50% 40%, #3c2a7a 0%, #1a103c 70%, #0c061c 100%);
+            --btn-purple: #7b61ff;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Roboto', sans-serif;
+            user-select: none;
+        }
+
+        body {
+            /* Background game yang diblur */
+            background: url('https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=2070&auto=format&fit=crop') center/cover;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Overlay gelap untuk background */
+        body::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: rgba(10, 5, 20, 0.85);
+            backdrop-filter: blur(10px);
+            z-index: 1;
+        }
+
+        /* --- MODAL CONTAINER --- */
+        .modal {
+            position: relative;
+            z-index: 10;
+            width: 980px;
+            height: 580px;
+            background: var(--bg-modal);
+            border-radius: 12px;
+            box-shadow: 0 0 0 2px #5a4bff, 0 10px 30px rgba(0,0,0,0.8), inset 0 0 20px rgba(106, 90, 205, 0.3);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Header Modal */
+        .modal-header {
+            height: 50px;
+            background: linear-gradient(180deg, #42328a 0%, #25165c 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .modal-header h2 {
+            color: #fff;
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .close-btn {
+            position: absolute;
+            right: 20px;
+            color: #fff;
+            font-size: 20px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        /* Body Modal */
+        .modal-body {
+            display: flex;
+            flex: 1;
+            padding: 15px;
+            gap: 15px;
+        }
+
+        /* =========================================
+           PANEL KIRI: PANGGUNG KARAKTER (3D SIMULATION)
+           ========================================= */
+        .stage-panel {
+            flex: 1.2;
+            background: var(--stage-bg);
+            border-radius: 8px;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            padding-bottom: 60px;
+        }
+
+        /* Lampu Sorot Kiri & Kanan */
+        .spotlight {
+            position: absolute;
+            top: -50px;
+            width: 150px;
+            height: 500px;
+            background: linear-gradient(to bottom, rgba(255,255,255,0.8), rgba(255,255,255,0));
+            transform-origin: top center;
+            filter: blur(15px);
+            opacity: 0.6;
+        }
+        .spotlight.left { left: 15%; transform: rotate(20deg); }
+        .spotlight.right { right: 15%; transform: rotate(-20deg); }
+
+        /* Lantai Panggung */
+        .stage-floor {
+            position: absolute;
+            bottom: -20px;
+            width: 90%;
+            height: 120px;
+            background: radial-gradient(ellipse at center, rgba(100, 150, 255, 0.4) 0%, rgba(30, 20, 80, 0) 70%);
+            border-top: 3px solid #7a9eff;
+            border-radius: 50% 50% 0 0;
+            box-shadow: 0 -5px 20px rgba(122, 158, 255, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 15px;
+            padding-top: 5px;
+        }
+
+        /* Titik-titik lampu di lantai */
+        .stage-floor::before, .stage-floor::after {
+            content: '';
+            width: 6px;
+            height: 6px;
+            background: #fff;
+            border-radius: 50%;
+            box-shadow: 0 0 5px #fff;
+        }
+
+        /* Ikon Kiri Atas */
+        .icon-top-left {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: #9b59b6;
+            border: 2px solid #fff;
+            border-radius: 6px;
+            width: 35px;
+            height: 22px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+        }
+        .icon-top-left i { color: #fff; font-size: 10px; }
+
+        /* Placeholder Karakter (Ganti dengan gambar karakter Anda) */
+        .character-img {
+            position: relative;
+            z-index: 5;
+            height: 350px;
+            /* Contoh menggunakan gambar placeholder berdiri */
+            background-image: url('https://i.imgur.com/3QZ4Z7x.png'); /* Ganti URL ini dengan gambar karaktermu yang transparan */
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: bottom center;
+            width: 150px;
+            filter: drop-shadow(0 5px 10px rgba(0,0,0,0.5));
+        }
+
+        /* =========================================
+           PANEL TENGAH: PROFIL
+           ========================================= */
+        .profile-panel {
+            flex: 0.9;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding: 5px;
+        }
+
+        .profile-header {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .avatar-box {
+            position: relative;
+            width: 75px;
+            height: 75px;
+            border-radius: 50%;
+            background: #f1c40f; /* Warna kuning/emas */
+            padding: 3px;
+        }
+
+        .avatar-box img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #2a1b5c;
+        }
+
+        .edit-avatar {
+            position: absolute;
+            bottom: -2px;
+            right: -2px;
+            background: #f1c40f;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #000;
+            font-size: 12px;
+            border: 2px solid #1a103c;
+            cursor: pointer;
+        }
+
+        .name-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .title-badge {
+            font-size: 12px;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .title-badge i { color: #fff; font-size: 14px; }
+
+        .username {
+            font-size: 20px;
+            font-weight: 700;
+            color: #fff;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+
+        /* Level Bar */
+        .level-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 5px;
+        }
+
+        .level-text {
+            font-size: 14px;
+            font-weight: 700;
+            color: #fff;
+            width: 40px;
+        }
+
+        .bar-bg {
+            flex: 1;
+            height: 16px;
+            background: var(--input-bg);
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .bar-fill {
+            width: 2%; /* Sesuaikan persentase */
+            height: 100%;
+            background: linear-gradient(90deg, #2ecc71, #a2ff00);
+        }
+
+        .bar-text {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 10px;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .exp-text {
+            font-size: 10px;
+            color: var(--text-muted);
+            text-align: center;
+            margin-top: -5px;
+            margin-bottom: 5px;
+        }
+
+        /* Input Couple/Fam */
+        .form-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-label {
+            font-size: 13px;
+            font-weight: 700;
+            color: #fff;
+            width: 55px;
+        }
+
+        .input-box {
+            flex: 1;
+            height: 32px;
+            background: var(--input-bg);
+            border-radius: 6px;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            padding: 0 8px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .search-btn {
+            color: #a8a3c0;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        /* Status Box */
+        .status-label {
+            font-size: 13px;
+            font-weight: 700;
+            color: #fff;
+            margin-top: 5px;
+        }
+
+        .status-box {
+            flex: 1;
+            background: var(--input-bg);
+            border-radius: 6px;
+            padding: 12px;
+            font-size: 13px;
+            color: #fff;
+            border: 1px solid rgba(255,255,255,0.05);
+            min-height: 80px;
+        }
+
+        /* =========================================
+           PANEL KANAN: STATISTIK
+           ========================================= */
+        .stats-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        /* Visitor */
+        .visitor-box {
+            background: rgba(0,0,0,0.25);
+            border-radius: 8px;
+            padding: 12px;
+            border: 1px solid rgba(255,255,255,0.02);
+        }
+
+        .section-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 10px;
+        }
+
+        .public-tag {
+            background: #382a6b;
+            color: #fff;
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+
+        .visitor-row {
+            display: flex;
+            justify-content: space-between;
+            background: var(--input-bg);
+            padding: 8px 12px;
+            border-radius: 4px;
+            margin-bottom: 6px;
+            font-size: 13px;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        /* Stats List */
+        .stats-box {
+            background: rgba(0,0,0,0.25);
+            border-radius: 8px;
+            padding: 12px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid rgba(255,255,255,0.02);
+        }
+
+        .more-info-btn {
+            background: #7b61ff;
+            color: #fff;
+            border: none;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .total-score {
+            background: #4a90e2;
+            color: #fff;
+            text-align: center;
+            padding: 6px;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .stats-list {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            overflow-y: auto;
+            flex: 1;
+            padding-right: 5px;
+        }
+
+        /* Scrollbar styling */
+        .stats-list::-webkit-scrollbar { width: 4px; }
+        .stats-list::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); }
+        .stats-list::-webkit-scrollbar-thumb { background: #4a3aff; border-radius: 2px; }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #fff;
+            padding: 3px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+        }
+
+        .stat-item:last-child { border-bottom: none; }
+        .stat-name { font-weight: 500; }
+        .stat-value { font-weight: 700; }
+    </style>
+</head>
+<body>
+
+    <!-- Modal Utama -->
+    <div class="modal">
+        <!-- Header -->
+        <div class="modal-header">
+            <h2>Character Info</h2>
+            <i class="fas fa-times close-btn"></i>
+        </div>
+
+        <!-- Body -->
+        <div class="modal-body">
+            
+            <!-- Kiri: Panggung -->
+            <div class="stage-panel">
+                <div class="icon-top-left">
+                    <i class="fas fa-magic"></i>
+                </div>
+                <div class="spotlight left"></div>
+                <div class="spotlight right"></div>
+                <div class="stage-floor"></div>
+                
+                <!-- Ganti URL gambar di CSS .character-img dengan gambar karakter Anda -->
+                <div class="character-img"></div>
+            </div>
+
+            <!-- Tengah: Profil -->
+            <div class="profile-panel">
+                <div class="profile-header">
+                    <div class="avatar-box">
+                        <img src="https://i.pravatar.cc/150?img=11" alt="Avatar">
+                        <div class="edit-avatar"><i class="fas fa-sync-alt"></i></div>
+                    </div>
+                    <div class="name-info">
+                        <div class="title-badge">
+                            <i class="fas fa-crown"></i> Dream Trainee
+                        </div>
+                        <div class="username">Luxarion</div>
+                    </div>
+                </div>
+
+                <div class="level-container">
+                    <div class="level-text">Lv.2</div>
+                    <div class="bar-bg">
+                        <div class="bar-fill"></div>
+                        <div class="bar-text">2%</div>
+                    </div>
+                </div>
+                <div class="exp-text">1 / 40</div>
+
+                <div class="form-row">
+                    <div class="form-label">Couple</div>
+                    <div class="input-box">
+                        <i class="fas fa-search search-btn"></i>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-label">Fam</div>
+                    <div class="input-box">
+                        <i class="fas fa-search search-btn"></i>
+                    </div>
+                </div>
+
+                <div class="status-label">Status</div>
+                <div class="status-box">
+                    Halo, senang bertemu denganmu!
+                </div>
+            </div>
+
+            <!-- Kanan: Statistik -->
+            <div class="stats-panel">
+                
+                <!-- Visitor -->
+                <div class="visitor-box">
+                    <div class="section-title">
+                        <span>Visitor</span>
+                        <span class="public-tag">Public <i class="fas fa-caret-down"></i></span>
+                    </div>
+                    <div class="visitor-row">
+                        <span>TODAY</span>
+                        <span>0</span>
+                    </div>
+                    <div class="visitor-row" style="margin-bottom: 0;">
+                        <span>TOTAL</span>
+                        <span>0</span>
+                    </div>
+                </div>
+
+                <!-- Stats -->
+                <div class="stats-box">
+                    <div class="section-title" style="margin-bottom: 8px;">
+                        <span>Stats</span>
+                        <button class="more-info-btn">More Info</button>
+                    </div>
+                    
+                    <div class="total-score">
+                        Total Stats Score: 17
+                    </div>
+
+                    <div class="stats-list">
+                        <div class="stat-item"><span class="stat-name">PURE Bonus</span><span class="stat-value">+5%</span></div>
+                        <div class="stat-item"><span class="stat-name">PERFECT Score</span><span class="stat-value">+19.2%</span></div>
+                        <div class="stat-item"><span class="stat-name">GREAT Score</span><span class="stat-value">+10%</span></div>
+                        <div class="stat-item"><span class="stat-name">GOOD Score</span><span class="stat-value">+10%</span></div>
+                        <div class="stat-item"><span class="stat-name">BAD Score</span><span class="stat-value">+10.6%</span></div>
+                        <div class="stat-item"><span class="stat-name">Highlight Score</span><span class="stat-value">+22.8%</span></div>
+                        <div class="stat-item"><span class="stat-name">SKRRR Chance</span><span class="stat-value">+0.1%</span></div>
+                        <div class="stat-item"><span class="stat-name">SKRRR Score</span><span class="stat-value">+0%</span></div>
+                        <div class="stat-item"><span class="stat-name">5x PERFECT Streak</span><span class="stat-value">+0%</span></div>
+                        <div class="stat-item"><span class="stat-name">Combo Bonus Score</span><span class="stat-value">+0%</span></div>
+                        <div class="stat-item"><span class="stat-name">Judgement Upgrade Chance</span><span class="stat-value">+0%</span></div>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+
+</body>
+</html>
